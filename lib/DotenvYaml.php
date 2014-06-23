@@ -26,9 +26,8 @@ class DotenvYaml {
         // then add the dotted keys to the environment
         self::_traverse($rootNode, $leafHandler);
 
-        // Also merge the values into the superglobals
-        $_ENV = array_merge_recursive($_ENV, $rootNode);
-        $_SERVER = array_merge_recursive($_SERVER, $rootNode);
+        // Also merge the values into the superglobal
+        $_ENV['.yml'] = array_merge_recursive((array)$_ENV['.yml'], $rootNode);
     }
 
     /**
