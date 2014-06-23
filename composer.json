@@ -1,0 +1,17 @@
+{
+    "name": "jimbocoder/php-dotenv-yaml",
+    "description": "Dotenv-style configs using YAML",
+    "require": {
+        "symfony/yaml": "*"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jim Howell",
+            "email": "jimbocoder@gmail.com"
+        }
+    ],
+    "autoload": {
+        "classmap": ["lib/"]
+    }
+}

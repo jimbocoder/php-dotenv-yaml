@@ -1,0 +1,19 @@
+---
+mysql: &mysql
+    master-db: &master-db
+        host: master-db.example.com
+        port: 3306
+        user: dev
+        pass: dev
+        dbname: dev
+    slaves: &slave-dbs
+        - host: slave1.example.com
+          port: 3306
+          user: dev
+          pass: dev
+          dbname: dev
+        - host: slave2.example.com
+          port: 3306
+          user: dev
+          pass: dev
+          dbname: dev
