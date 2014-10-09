@@ -8,6 +8,7 @@ class DotenvYaml {
 
     const CACHE_TTL = 5;
     const CACHE_GRACE_TTL = 5;
+    const STAMPEDE_LOCK_TTL = 10;
 
     /**
      * Inject a configuration file + directory into the environment
@@ -72,12 +73,23 @@ class DotenvYaml {
         // Try to get a fully parsed config tree from cache
         $cache = new FilesystemCache("$conf_d/.cache");
         $cacheKey = sprintf("%s:%s+%s", __CLASS__, $envFile, $conf_d);
-        $cacheGraceKey = sprintf("%s:grace:%s+%s", __CLASS__, $envFile, $conf_d);
+        $stampedeLockKey = "$cacheKey:stampedeLock";
         if ( $parsedTree = $cache->fetch($cacheKey) ) {
+            // Cache hit
             return $parsedTree;
-        } else if ( $parsedTree = $cache->fetch($cacheGraceKey) ) {
-            return $parsedTree;
+        } else {
+            // Cache miss, but carefully avoid the 'thundering herd' effect:
+            $cacheGraceKey = sprintf("%s:grace:%s+%s", __CLASS__, $envFile, $conf_d);
+            if ( $cache->contains($stampedeLockKey) ) {
+                // Some other thread has volunteered to update the cache, so just use the grace value if possible
+                if ( $parsedTree = $cache->fetch($cacheGraceKey) ) {
+                    return $parsedTree;
+                }
+            }
         }
+
+        // Volunteer to update the cache:
+        $cache->save($stampedeLockKey, true, self::STAMPEDE_LOCK_TTL);
 
         $envFile = realpath($envFile);
         if ( !file_exists($envFile) ) {
@@ -92,8 +104,11 @@ class DotenvYaml {
 
         $parsedEnvironment = $parser->parse(file_get_contents($envFile));
         $parsedTree = $parser->parse(file_get_contents($envFile));
+
         $cache->save($cacheKey, $parsedTree, self::CACHE_TTL);
         $cache->save($cacheGraceKey, $parsedTree, self::CACHE_TTL + self::CACHE_GRACE_TTL);
+        $cache->delete($stampedeLockKey);
+
         return $parsedTree;
     }
 
