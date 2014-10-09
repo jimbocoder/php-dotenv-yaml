@@ -36,6 +36,32 @@ class DotenvYaml {
     }
 
     /**
+     * Convenience method to make reading the env values a little easier.
+     */
+    public static function get($dottedKey, $default = null)
+    {
+        // By forbidding these characters, I'm pretty sure eval() can be made safe.
+        if ( strpbrk($dottedKey, '{};') ) {
+            throw new \Exception("Unsafe key lookup!");
+        }
+
+        // Pretty sure this is the first time I've EVER used eval.
+        // The alternatives for a deep, arbitrary array lookup seemed to be iterating or recursing
+        // into the array, instead of a direct key lookup.  Because this function can see
+        // a lot of use, speed's a priority.
+
+        // Put together a string like $_ENV[".yml"]["a"]["b"]["c"]...
+        $lookup = '$_ENV[".yml"]["' . str_replace('.', '"]["', $dottedKey) . '"]';
+
+        // Do the lookup!
+        if ( ($val = eval("if ( isset($lookup) ) { return $lookup; }")) !== null ) {
+            return $val;
+        } else {
+            return $default;
+        }
+    }
+
+    /**
      * Parse the file(s) from the filesystem
      * @param $envFile
      * @throws \InvalidArgumentException
