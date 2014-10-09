@@ -53,14 +53,14 @@ class DotenvYaml {
         return $parser->parse(file_get_contents($envFile));
     }
 
-
     /**
      * recursively crawl the configuration tree and apply each leaf to the environment
      * @param array $root           Configuration array
      * @param callback $leafHandler Applied to each leaf node in the tree
      * @param string $prefix        Don't worry about it
      */
-    protected static function _traverse($root, $leafHandler, $prefix='') {
+    protected static function _traverse($root, $leafHandler, $prefix='')
+    {
         foreach($root as $index=>$node) {
             $key = $prefix ? "$prefix.$index" : $index;
 
@@ -73,11 +73,11 @@ class DotenvYaml {
         }
     }
 
-
     /**
      * Detect which env facilities are available, and return a function that knows how to use them
      */
-    protected static function _chooseLeafHandler() {
+    protected static function _chooseLeafHandler()
+    {
         if ( function_exists('apache_setenv') ) {
             return function ($k, $v) {
                 putenv("$k=$v");
@@ -89,6 +89,5 @@ class DotenvYaml {
             };
         }
     }
-
 }
 
