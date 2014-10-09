@@ -26,6 +26,11 @@ class DotenvYaml {
         // then add the dotted keys to the environment
         self::_traverse($rootNode, $leafHandler);
 
+        // Just to avoid a silly E_NOTICE:
+        if ( !array_key_exists('.yml', $_ENV) ) {
+            $_ENV['.yml'] = array();
+        }
+
         // Also merge the values into the superglobal
         $_ENV['.yml'] = array_merge_recursive((array)$_ENV['.yml'], $rootNode);
     }
