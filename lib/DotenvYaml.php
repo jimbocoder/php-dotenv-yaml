@@ -2,8 +2,12 @@
 namespace jimbocoder;
 
 use Symfony\Component\Yaml\Parser;
+use Doctrine\Common\Cache\FilesystemCache;
 
 class DotenvYaml {
+
+    const CACHE_TTL = 5;
+    const CACHE_GRACE_TTL = 5;
 
     /**
      * Inject a configuration file + directory into the environment
@@ -16,6 +20,7 @@ class DotenvYaml {
         } else {
             $conf_d = realpath(dirname($envFile) . '/' . $conf_d);
         }
+
         $rootNode = self::_load($envFile, $conf_d);
 
         // We choose the handler strategy up front, so we only have to make the decision once
@@ -45,11 +50,6 @@ class DotenvYaml {
             throw new \Exception("Unsafe key lookup!");
         }
 
-        // Pretty sure this is the first time I've EVER used eval.
-        // The alternatives for a deep, arbitrary array lookup seemed to be iterating or recursing
-        // into the array, instead of a direct key lookup.  Because this function can see
-        // a lot of use, speed's a priority.
-
         // Put together a string like $_ENV[".yml"]["a"]["b"]["c"]...
         $lookup = '$_ENV[".yml"]["' . str_replace('.', '"]["', $dottedKey) . '"]';
 
@@ -69,6 +69,16 @@ class DotenvYaml {
      */
     protected static function _load($envFile, $conf_d)
     {
+        // Try to get a fully parsed config tree from cache
+        $cache = new FilesystemCache("$conf_d/.cache");
+        $cacheKey = sprintf("%s:%s+%s", __CLASS__, $envFile, $conf_d);
+        $cacheGraceKey = sprintf("%s:grace:%s+%s", __CLASS__, $envFile, $conf_d);
+        if ( $parsedTree = $cache->fetch($cacheKey) ) {
+            return $parsedTree;
+        } else if ( $parsedTree = $cache->fetch($cacheGraceKey) ) {
+            return $parsedTree;
+        }
+
         $envFile = realpath($envFile);
         if ( !file_exists($envFile) ) {
             throw new \InvalidArgumentException("Environment file `$envFile` not found.");
@@ -81,7 +91,10 @@ class DotenvYaml {
         }, $preFiles);
 
         $parsedEnvironment = $parser->parse(file_get_contents($envFile));
-        return $parser->parse(file_get_contents($envFile));
+        $parsedTree = $parser->parse(file_get_contents($envFile));
+        $cache->save($cacheKey, $parsedTree, self::CACHE_TTL);
+        $cache->save($cacheGraceKey, $parsedTree, self::CACHE_TTL + self::CACHE_GRACE_TTL);
+        return $parsedTree;
     }
 
     /**
