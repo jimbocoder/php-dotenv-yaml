@@ -5,12 +5,28 @@ use \jimbocoder\DotenvYaml as Env;
 
 Env::load(__DIR__);
 
-var_dump($_SERVER);
-var_dump($_ENV);
+// var_dump($_SERVER);
+// var_dump($_ENV);
 
-var_dump(Env::get('not.a.real.key', 'Default Scalar'));
-var_dump(Env::get('not.a.real.key2', array('default array')));
-var_dump(Env::get('not.a.real.key3'));
-var_dump(Env::get('tak.logging.defaultLogLevel'));
-var_dump(Env::get('tak.logging'));
+try {
+    // Should throw exception
+    var_dump(Env::need('not.a.real.key'));
+} catch ( \OutOfBoundsException $e) {
+    // Good!
+}
+
+// Test that ::want() can return a default scalar when keys dont exist
+ $default = mt_rand();
+if ( $default !== Env::want('not.a.real.key', $default) ) {
+    throw new \Exception();
+}
+
+// Test that ::want() can return a default array when keys dont exist
+ $default = array(time());
+if ( $default !== Env::want('not.a.real.key', $default) ) {
+    throw new \Exception();
+}
+
+// Test that required values don't blow up when they DO exist.
+$logLevel = Env::need('tak.logging.defaultLogLevel');
 

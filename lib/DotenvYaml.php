@@ -42,9 +42,10 @@ class DotenvYaml {
     }
 
     /**
-     * Convenience method to make reading the env values a little easier.
+     * Return the specified environment key or cause a ruckus.
+     * @throws \OutOfBoundsException
      */
-    public static function get($dottedKey, $default = null)
+    public static function need($dottedKey)
     {
         // By forbidding these characters, I'm pretty sure eval() can be made safe.
         if ( strpbrk($dottedKey, '{};') ) {
@@ -55,11 +56,32 @@ class DotenvYaml {
         $lookup = '$_ENV[".yml"]["' . str_replace('.', '"]["', $dottedKey) . '"]';
 
         // Do the lookup!
-        if ( ($val = eval("if ( isset($lookup) ) { return $lookup; }")) !== null ) {
-            return $val;
+        if ( ($val = eval("if ( isset($lookup) ) { return $lookup; }")) === null ) {
+            throw new \OutOfBoundsException("No such key: $dottedKey");
         } else {
+            return $val;
+        }
+    }
+
+    /**
+     * Return the specified environment key if it exists, otherwise the default value.
+     */
+    public static function want($dottedKey, $default)
+    {
+        try {
+            return static::need($dottedKey);
+        } catch ( \OutOfBoundsException $e ) {
             return $default;
         }
+    }
+
+    /**
+     * Here for backwards-compatibility.
+     * Try to use need() or want() instead of this method.
+     */
+    public static function get($dottedKey, $default = null)
+    {
+        return static::want($dottedKey, $default);
     }
 
     /**
