@@ -2,7 +2,7 @@
     "name": "jimbocoder/php-dotenv-yaml",
     "description": "Dotenv-style configs using YAML",
     "require": {
-        "symfony/yaml": "*",
+        "symfony/yaml": "3.0.*@dev",
         "doctrine/cache": "~1.3"
     },
     "license": "MIT",
